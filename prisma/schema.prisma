@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String?  @unique
+  createdAt DateTime @default(now())
+
+  streamers Streamer[]
+}
+
+model Streamer {
+  id            String    @id @default(cuid())
+  platform      String
+  username      String
+  displayName   String?
+
+  isLive        Boolean   @default(false)
+  lastLiveAt    DateTime?
+  lastCheckedAt DateTime?
+
+  checkInterval Int       @default(300)
+  priorityScore Int       @default(0)
+
+  inactiveDays  Int       @default(0)
+  isArchived    Boolean   @default(false)
+
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+
+  subscriptions Subscription[]
+  events        StreamEvent[]
+
+  createdAt     DateTime  @default(now())
+
+  @@unique([platform, username, userId])
+}
+
+model Subscription {
+  id         String   @id @default(cuid())
+  streamerId String
+  streamer   Streamer @relation(fields: [streamerId], references: [id], onDelete: Cascade)
+
+  guildId       String
+  channelId     String
+  mentionRoleId String?
+
+  createdAt     DateTime @default(now())
+}
+
+model StreamEvent {
+  id         String   @id @default(cuid())
+  streamerId String
+  streamer   Streamer @relation(fields: [streamerId], references: [id], onDelete: Cascade)
+
+  title          String?
+  thumbnail      String?
+  profileImage   String?
+  url            String?
+  notifiedGuilds Json     @default("[]")
+
+  startedAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([streamerId])
+  @@index([createdAt])
+}
